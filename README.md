@@ -55,7 +55,8 @@ uv pip install -r llm_quiz/requirements.txt
 
 ## Configuration
 
-Create a `config.toml` file:
+Create a `config.toml` file to customize the tool's behavior:
+
 ```toml
 [api]
 base_url = "https://openrouter.ai/api/v1"
@@ -63,7 +64,31 @@ base_url = "https://openrouter.ai/api/v1"
 [models]
 quiz_model = "openrouter/google/gemma-3-4b-it"
 evaluator_model = "openrouter/google/gemini-2.5-flash-lite"
+
+[context]
+urls = [
+    "https://raw.githubusercontent.com/course/repo/main/docs/lecture-notes.qmd",
+    "https://raw.githubusercontent.com/course/repo/main/slides/week1.md"
+]
+
+[output]
+verbose = false
 ```
+
+### URL Grounding
+
+The `[context.urls]` section is particularly useful for course integration. By providing URLs to your course materials (lecture notes, slides, readings), the tool can:
+
+- **Validate question relevance**: Ensure student questions are actually about your course content
+- **Provide better context**: Help the AI understand the specific terminology and concepts you're teaching
+- **Improve evaluation accuracy**: Give the evaluator model the same context students have access to
+
+Supported URL formats:
+- Raw GitHub files (recommended): `https://raw.githubusercontent.com/user/repo/main/file.md`
+- Web pages: `https://course-website.com/readings/`
+
+The tool will fetch and process these materials to create a knowledge base for validating and evaluating student questions.
+PDFs are not currently supported but might be in the future.
 
 ## Command Options
 
