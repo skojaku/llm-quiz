@@ -1,8 +1,10 @@
 # LLM Quiz Challenge
 
-Learning to create good questions is a great learning exercise! Creating good questions requires a deep understanding of the materials and attention to details, edge cases, and subtle distinctions. This led me to think: why not ask students to create questions, instead of me generating them?
+Writing great questions is one of the best ways to deepen your understanding of a subject.
+As an instructor, I often found myself reviewing course materials to ensure my quiz questions went beyond surface-level facts and required nuanced understanding.
+This inspired me to turn the tables! What if students created their own challenging questions as a way to learn more effectively?
 
-This repository provides a simple command line tool that lets students create questions that stump large language models. Large language models are pretty good at answering questions about surface-level knowledge, but often fail short for questions that require nuanced understanding. Through this exercise, I hope students develop a deeper understanding and attention to details, along with the limitations of large language models they might use daily in their work!
+This repository provides a simple command line tool that lets students create questions that stump large language models. Large language models are pretty good at answering questions about surface-level knowledge, but often fail short for questions that require nuanced understanding. Through this exercise, I hope students develop a deeper understanding and attention to details, along with the limitations of large language models they might use daily in their work.
 
 ## How It Works
 
