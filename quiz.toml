@@ -5,3 +5,7 @@ answer = "When the network is degree heterogeneous. This is because a single hub
 [[questions]]
 question = "What is the key characteristics of the small world networks?"
 answer = "The small-world networks are the networks with high clustering coefficient and short average path length."
+
+[[questions]]
+question = "How does small world structure affect me?" # Vague and confusing question.
+answer = "Small world networks make you everyone being connected by a short path. This means that you are connected to everyone on earth with by paths of short distance. That's why you sometimes find random people you met on a street actually being friends of your friend."
