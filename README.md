@@ -6,15 +6,36 @@ This inspired me to turn the tables! What if students created their own challeng
 
 This repository provides a simple command line tool that lets students create questions that stump large language models. Large language models are pretty good at answering questions about surface-level knowledge, but often fail short for questions that require nuanced understanding. Through this exercise, I hope students develop a deeper understanding and attention to details, along with the limitations of large language models they might use daily in their work.
 
+## How it works
+
+<p align="center" width="80%">
+  <img src="./demo.gif" alt="Demo" style="max-width:80%;">
+</p>
+
+Students create quiz questions in a TOML file, then the tool uses AI to try answering them. If the AI fails, the student wins!
+
+More specifically, students win if all the following conditions are met:
+
+1. The question is about the course materials
+2. The answer is correct
+3. The question is conceptual (not about coding, not about heavy math)
+4. LLM fails to answer the question
+
+
+In my lecture, I integrate this tool with GitHub Actions to automatically generate pass/fail markers for students when they submit their quiz. You can find [an example here](https://github.com/sk-classroom/advnetsci-robustness).
+
+
 ## 🚀 Quick Test (Fork & Run)
 
-Want to test this immediately? 
+
+Want to test this immediately?
 
 1. **Fork this repository** to your GitHub account
 2. Get a free API key from [OpenRouter](https://openrouter.ai/api-key)
 3. In your forked repo, go to Settings → Secrets and variables → Actions
 4. Add a new secret named `OPENROUTER_API_KEY` with your API key
-5. Go to the Actions tab and run the "Demo - AI Quiz Challenge" workflow
+5. Edit the `quiz.toml` file to add your own questions
+5. Go to the Actions tab and and check out the "Demo - AI Quiz Challenge" workflow
 6. Watch the results to see if the sample questions stump the AI!
 
 The demo workflow runs automatically on every push and shows you whether your questions successfully challenge the AI models.
@@ -31,18 +52,10 @@ After testing the demo, create your own challenging questions:
 
 **Pro Tips for Stumping AI:**
 - Ask about edge cases and exceptions
-- Require connecting multiple concepts  
+- Require connecting multiple concepts
 - Focus on domain-specific expertise
 - Target subtle distinctions and nuances
 
-## How It Works
-
-
-![Demo](./demo.gif)
-
-Students create quiz questions in a TOML file, then the tool uses AI to try answering them. If the AI fails, the student wins!
-
-In my lecture, I integrate this tool with GitHub Actions to automatically generate pass/fail markers for students when they submit their quiz. You can find [an example here](https://github.com/sk-classroom/advnetsci-robustness).
 
 ## Quick Start (Local Development)
 
