@@ -15,44 +15,44 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Install uv
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-    
+
     - name: Install dependencies
       run: |
         uv sync --dev
-    
+
     - name: Run tests (basic functionality)
       run: |
         uv run python -m llm_quiz.test_dspy
-    
+
     - name: Run pytest
       run: |
         uv run pytest llm_quiz/ -v
-    
+
     - name: Check code formatting with black
       run: |
         uv run black --check llm_quiz/
-    
+
     - name: Check import sorting with isort
       run: |
         uv run isort --check-only llm_quiz/
-    
+
     - name: Lint with flake8
       run: |
         uv run flake8 llm_quiz/
-    
+
     - name: Test CLI installation
       run: |
         uv run llm-quiz --help
@@ -61,33 +61,33 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push' || github.event_name == 'pull_request'
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: "3.11"
-    
+
     - name: Install uv
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-    
+
     - name: Install dependencies
       run: |
         uv sync --dev
-    
+
     - name: Test with real API (if key provided)
-      if: ${{ secrets.API_KEY != '' }}
+      if: ${{ secrets.OPENROUTER_API_KEY != '' }}
       run: |
-        uv run python -m llm_quiz.cli --quiz-file quiz.toml --api-key ${{ secrets.API_KEY }} --output test-results.json
+        uv run python -m llm_quiz.cli --quiz-file quiz.toml --api-key ${{ secrets.OPENROUTER_API_KEY }} --output test-results.json
       env:
-        API_KEY: ${{ secrets.API_KEY }}
-    
+        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
     - name: Upload test results
-      if: ${{ secrets.API_KEY != '' }}
+      if: ${{ secrets.OPENROUTER_API_KEY != '' }}
       uses: actions/upload-artifact@v3
       with:
         name: test-results
