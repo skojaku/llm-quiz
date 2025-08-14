@@ -556,13 +556,13 @@ class DSPyQuizChallenge:
         evaluated_questions = student_wins + llm_wins
         success_rate = student_wins / evaluated_questions if evaluated_questions > 0 else 0.0
         
-        # Student passes only if there are no similarity issues AND all other conditions are met
+        # Student passes if they win all valid questions - similarity issues are informational only
         has_similarity_issues = similarity_analysis['has_issues']
         student_passes = (
             valid_count == len(questions) and 
             evaluated_questions > 0 and 
-            success_rate >= 1.0 and
-            not has_similarity_issues  # Added similarity check
+            success_rate >= 1.0
+            # Removed similarity check - it shouldn't block passing if student legitimately won
         )
 
         # Generate feedback using DSPy
