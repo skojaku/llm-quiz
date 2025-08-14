@@ -20,6 +20,9 @@ class ValidationIssue(str, Enum):
     CONTEXT_MISMATCH = (
         "context_mismatch"  # Only use when question is completely unrelated to course topic
     )
+    VAGUE_QUESTION = "vague_question"  # Question lacks specificity or clarity
+    AMBIGUOUS_WORDING = "ambiguous_wording"  # Question has multiple interpretations
+    INCOMPLETE_CONTEXT = "incomplete_context"  # Question lacks sufficient context to answer clearly
 
 
 class ParseQuestionAndAnswer(dspy.Signature):
@@ -42,7 +45,13 @@ class ValidateQuestion(dspy.Signature):
     Questions should be considered valid if they are generally relevant to the course topic
     (network science, small-world networks, etc.) even if they don't reference specific
     details from the context. Only flag context_mismatch if the question is completely
-    unrelated to the course subject matter."""
+    unrelated to the course subject matter.
+    
+    Pay special attention to question clarity and specificity:
+    - Flag vague_question if the question lacks specificity or is too general
+    - Flag ambiguous_wording if the question has multiple valid interpretations
+    - Flag incomplete_context if the question lacks sufficient context to answer clearly
+    - Questions should be precise, unambiguous, and clearly worded"""
 
     question: str = dspy.InputField(desc="The student's quiz question to validate")
     answer: str = dspy.InputField(desc="The student's provided correct answer")
@@ -50,7 +59,7 @@ class ValidateQuestion(dspy.Signature):
 
     is_valid: bool = dspy.OutputField(desc="Whether the question is valid and acceptable")
     issues: List[ValidationIssue] = dspy.OutputField(
-        desc="List of specific validation issues found"
+        desc="List of specific validation issues found (check for vague_question, ambiguous_wording, incomplete_context)"
     )
     confidence: Literal["HIGH", "MEDIUM", "LOW"] = dspy.OutputField(
         desc="Confidence in validation decision"
@@ -61,6 +70,9 @@ class ValidateQuestion(dspy.Signature):
     )
     difficulty_assessment: Literal["TOO_EASY", "APPROPRIATE", "TOO_HARD"] = dspy.OutputField(
         desc="Assessment of question difficulty level"
+    )
+    clarity_score: Literal["CLEAR", "SOMEWHAT_CLEAR", "UNCLEAR"] = dspy.OutputField(
+        desc="Assessment of question clarity and specificity"
     )
 
 
@@ -100,7 +112,13 @@ class EvaluateAnswer(dspy.Signature):
 
 
 class GenerateRevisionGuidance(dspy.Signature):
-    """Generate detailed revision guidance for student's quiz questions that need improvement."""
+    """Generate detailed revision guidance for student's quiz questions that need improvement.
+    
+    Focus especially on clarity and specificity issues:
+    - Provide specific guidance for making vague questions more precise
+    - Suggest ways to eliminate ambiguous wording
+    - Recommend adding context when questions are incomplete
+    - Give concrete examples of clearer question formulations"""
 
     question: str = dspy.InputField(desc="The student's quiz question")
     answer: str = dspy.InputField(desc="The student's provided correct answer")
@@ -120,16 +138,19 @@ class GenerateRevisionGuidance(dspy.Signature):
         desc="Detailed list of specific problems with the question"
     )
     concrete_suggestions: List[str] = dspy.OutputField(
-        desc="Step-by-step suggestions for improvement"
+        desc="Step-by-step suggestions for improvement, focusing on clarity and specificity"
     )
     example_improvements: List[str] = dspy.OutputField(
-        desc="Concrete examples of how to rewrite parts of the question"
+        desc="Concrete examples of how to rewrite parts of the question for better clarity"
     )
     difficulty_adjustment: str = dspy.OutputField(
         desc="How to adjust difficulty level appropriately"
     )
     context_alignment: str = dspy.OutputField(
         desc="How to better align question with provided context materials"
+    )
+    clarity_improvements: List[str] = dspy.OutputField(
+        desc="Specific suggestions for making the question clearer and more precise"
     )
 
 

@@ -65,6 +65,7 @@ class RevisionGuidance:
     example_improvements: List[str]
     difficulty_adjustment: str
     context_alignment: str
+    clarity_improvements: List[str]
 
 
 @dataclass
@@ -82,6 +83,7 @@ class QuizResult:
     )
     difficulty_assessment: Optional[str] = None  # Assessment of question difficulty
     improvement_suggestions: List[str] = None  # Suggestions for improving student's question
+    clarity_score: Optional[str] = None  # Assessment of question clarity
     error: Optional[str] = None
 
 
@@ -289,6 +291,7 @@ class DSPyQuizChallenge:
                 example_improvements=guidance.example_improvements,
                 difficulty_adjustment=guidance.difficulty_adjustment,
                 context_alignment=guidance.context_alignment,
+                clarity_improvements=guidance.clarity_improvements,
             )
         except Exception as e:
             logger.error(f"Error generating revision guidance: {e}")
@@ -300,6 +303,7 @@ class DSPyQuizChallenge:
                 example_improvements=["Make the question more specific to the course topics"],
                 difficulty_adjustment="Ensure the question requires deep understanding rather than memorization",
                 context_alignment="Align the question with the provided context materials",
+                clarity_improvements=["Make the question more precise and specific", "Avoid ambiguous wording"],
             )
 
     def run_quiz_challenge(
@@ -358,6 +362,7 @@ class DSPyQuizChallenge:
                         revision_guidance=revision_guidance,
                         difficulty_assessment=validation.difficulty_assessment,
                         improvement_suggestions=validation.revision_suggestions,
+                        clarity_score=getattr(validation, 'clarity_score', None),
                         error=validation.reason,
                     )
                     question_results.append(result)
@@ -418,6 +423,7 @@ class DSPyQuizChallenge:
                     revision_guidance=revision_guidance,
                     difficulty_assessment=validation.difficulty_assessment,
                     improvement_suggestions=evaluation.improvement_suggestions,
+                    clarity_score=getattr(validation, 'clarity_score', None),
                 )
                 question_results.append(result)
                 pbar.update(1)  # Step 5 complete
