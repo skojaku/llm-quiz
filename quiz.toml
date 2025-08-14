@@ -1,7 +1,11 @@
 [[questions]]
-question = "Under what specific network topology conditions does the global clustering coefficient fail to accurately represent the local clustering behavior of typical nodes?"
+question = "When is the global clustering not a good representation of the network?"
 answer = "When the network is degree heterogeneous. This is because a single hub can create substantially many triangles in the network, not representing the number of triangles typical nodes in the network form."
 
 [[questions]]
-question = "What are the two defining quantitative characteristics that distinguish small-world networks from both regular lattices and random networks?"
-answer = "Small-world networks are characterized by having both a high clustering coefficient (like regular lattices) and a short average path length (like random networks)."
+question = "What is the key characteristics of the small world networks?"
+answer = "The small-world networks are the networks with high clustering coefficient and short average path length."
+
+[[questions]]
+question = "How does small world structure affect me?" # Vague and confusing question.
+answer = "Small world networks make you everyone being connected by a short path. This means that you are connected to everyone on earth with by paths of short distance. That's why you sometimes find random people you met on a street actually being friends of your friend."
