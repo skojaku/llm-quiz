@@ -5,13 +5,13 @@ This module replaces the complex manual prompt engineering and JSON parsing
 with clean DSPy signatures and modules.
 """
 
-import logging
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass, asdict
 import json
-import urllib.request
+import logging
 import urllib.error
+import urllib.request
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import dspy
 from tqdm import tqdm
@@ -23,23 +23,23 @@ except ImportError:
 
 try:
     from .dspy_signatures import (
-        ParseQuestionAndAnswer,
-        ValidateQuestion,
         AnswerQuizQuestion,
         EvaluateAnswer,
         GenerateFeedback,
         GenerateRevisionGuidance,
+        ParseQuestionAndAnswer,
+        ValidateQuestion,
         ValidationIssue,
     )
 except ImportError:
     # Handle relative import for standalone execution
     from dspy_signatures import (
-        ParseQuestionAndAnswer,
-        ValidateQuestion,
         AnswerQuizQuestion,
         EvaluateAnswer,
         GenerateFeedback,
         GenerateRevisionGuidance,
+        ParseQuestionAndAnswer,
+        ValidateQuestion,
         ValidationIssue,
     )
 

@@ -6,10 +6,10 @@ try to stump AI models.
 """
 
 import argparse
-import sys
 import logging
+import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 try:
     import tomllib  # Python 3.11+ built-in TOML parser
@@ -17,9 +17,9 @@ except ImportError:
     import tomli as tomllib  # Fallback for Python < 3.11
 
 import colorama
-from colorama import Fore, Back, Style
+from colorama import Back, Fore, Style
 
-from .dspy_core import DSPyQuizChallenge, QuizResults, QuizResult
+from .dspy_core import DSPyQuizChallenge, QuizResult, QuizResults
 
 # Initialize colorama for cross-platform color support
 colorama.init()

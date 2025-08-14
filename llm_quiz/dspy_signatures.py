@@ -5,9 +5,10 @@ This module defines structured DSPy signatures that replace complex manual
 prompt engineering and JSON parsing with clean, type-safe interactions.
 """
 
-from typing import Literal, List, Optional
-import dspy
 from enum import Enum
+from typing import List, Literal, Optional
+
+import dspy
 
 
 class ValidationIssue(str, Enum):

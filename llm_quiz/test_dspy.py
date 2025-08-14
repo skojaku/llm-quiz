@@ -4,21 +4,21 @@ Test script for DSPy implementation of LLM Quiz Challenge.
 This script tests the basic functionality without requiring real API keys.
 """
 
-import sys
 import logging
 import os
+import sys
 from pathlib import Path
 
 # Import our modules
 sys.path.insert(0, os.path.dirname(__file__))
 
+from dspy_core import DSPyQuizChallenge, QuizQuestion
 from dspy_signatures import (
-    ParseQuestionAndAnswer,
-    ValidateQuestion,
     AnswerQuizQuestion,
     EvaluateAnswer,
+    ParseQuestionAndAnswer,
+    ValidateQuestion,
 )
-from dspy_core import DSPyQuizChallenge, QuizQuestion
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
