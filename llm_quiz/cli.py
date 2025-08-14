@@ -260,13 +260,13 @@ GitHub Classroom Integration:
     parser.add_argument(
         "--quiz-model",
         default="gpt-4o-mini",
-        help="Model for LLM to answer student's questions (default: gpt-4o-mini)"
+        help="Model for LLM to answer student's questions (based on lightlm). For OpenRouter users, use 'openrouter/' prefix. For Ollama users, specify model name directly (default: gpt-4o-mini)"
     )
     
     parser.add_argument(
         "--evaluator-model", 
         default="gpt-4o",
-        help="Model for evaluating LLM's answers against student's correct answers (default: gpt-4o)"
+        help="Model for evaluating LLM's answers against student's correct answers (based on lightlm). For OpenRouter users, use 'openrouter/' prefix. For Ollama users, specify model name directly (default: gpt-4o)"
     )
     
     # Context configuration
