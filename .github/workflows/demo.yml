@@ -1,0 +1,84 @@
+name: Demo - AI Quiz Challenge
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  demo-quiz-challenge:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Run Quiz Challenge Demo
+      run: |
+        echo "🎯 Running LLM Quiz Challenge Demo..."
+        echo "This demonstrates how AI models can be stumped by well-crafted questions"
+        echo
+        
+        # Run with API key if available, otherwise show what would happen
+        if [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+          echo "✅ API key found - running live demo"
+          uv run python -m llm_quiz.cli \
+            --quiz-file quiz.toml \
+            --api-key ${{ secrets.OPENROUTER_API_KEY }} \
+            --output demo-results.json || true
+          
+          if [ -f "demo-results.json" ]; then
+            echo "📊 Demo Results:"
+            cat demo-results.json | jq '.' || cat demo-results.json
+          fi
+        else
+          echo "⚠️  No API key configured - showing mock demo"
+          echo "To see live results, fork this repo and add OPENROUTER_API_KEY to your secrets"
+          echo
+          echo "Example questions that typically stump AI models:"
+          echo "1. When is the global clustering not a good representation of the network?"
+          echo "2. What is the key characteristics of the small world networks?"
+          echo
+          echo "These questions require nuanced understanding beyond surface-level knowledge."
+        fi
+
+    - name: Upload demo results
+      if: ${{ secrets.OPENROUTER_API_KEY != '' }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: demo-results
+        path: demo-results.json
+
+    - name: Display Fork Instructions
+      run: |
+        echo "🚀 How to test this yourself:"
+        echo "1. Fork this repository"
+        echo "2. Get an API key from https://openrouter.ai/api-key"
+        echo "3. Add the API key as 'OPENROUTER_API_KEY' in your repo secrets"
+        echo "4. Push a commit or manually trigger this workflow"
+        echo "5. Check the Actions tab to see if your questions stump the AI!"
+        echo
+        echo "💡 Tips for creating challenging questions:"
+        echo "- Focus on nuanced understanding rather than facts"
+        echo "- Ask about edge cases and exceptions"
+        echo "- Require connecting multiple concepts"
+        echo "- Target domain-specific expertise"
