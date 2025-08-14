@@ -1,0 +1,7 @@
+[[questions]]
+question = "When is the global clustering not a good representation of the network?"
+answer = "When the network is degree heterogeneous. This is because a single hub can create substantially many triangles in the network, not representing the number of triangles typical nodes in the network form."
+
+[[questions]]
+question = "What is the key characteristics of the small world networks?"
+answer = "The small-world networks are the networks with high clustering coefficient and short average path length."
