@@ -24,7 +24,7 @@ env:
 jobs:
   format:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -67,11 +67,7 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add llm_quiz/
-        git commit -m "Auto-format code with black and isort
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+        git commit -m "Auto-format code with black and isort"
 
     - name: Push changes
       if: steps.verify-changed-files.outputs.changed == 'true'
