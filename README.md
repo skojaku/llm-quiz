@@ -1,4 +1,4 @@
-# LLM Quiz
+# LLM Quiz Challenge
 
 Learning to create good questions is a great learning exercise! Creating good questions requires a deep understanding of the materials and attention to details, edge cases, and subtle distinctions. This led me to think: why not ask students to create questions, instead of me generating them?
 
@@ -33,7 +33,9 @@ answer = "When the network is degree heterogeneous. Hubs can substantially reduc
 uv run python -m llm_quiz.cli --quiz-file quiz.toml --api-key your-api-key
 ```
 
-3. **See results**:
+(Install `uv` first: `curl -LsSf https://astral.sh/uv/install.sh | sh`)
+
+4. **See results**:
 ```
 🎉 RESULT: PASS - You successfully stumped the AI!
 📊 Summary: 2/2 questions stumped the AI
@@ -78,11 +80,3 @@ uv run python -m llm_quiz.cli --quiz-file quiz.toml --api-key sk-xxx --quiz-mode
 # Local Ollama
 uv run python -m llm_quiz.cli --quiz-file quiz.toml --base-url http://localhost:11434/v1 --api-key dummy --quiz-model llama2
 ```
-
-## For Teachers
-
-The tool generates GitHub Classroom markers automatically:
-- `STUDENTS_QUIZ_KEIKO_WIN`: Student passes (AI was stumped)
-- `STUDENTS_QUIZ_KEIKO_LOSE`: Student fails (AI answered correctly)
-
-Students must stump the AI on ALL questions to pass.
