@@ -92,14 +92,14 @@ jobs:
         uv sync --dev
 
     - name: Test with real API (if key provided)
-      if: ${{ secrets.OPENROUTER_API_KEY != '' }}
+      if: ${{ secrets.OPENROUTER_API_KEY != null }}
       run: |
         uv run python -m llm_quiz.cli --quiz-file quiz.toml --api-key ${{ secrets.OPENROUTER_API_KEY }} --output test-results.json
       env:
         OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
     - name: Upload test results
-      if: ${{ secrets.OPENROUTER_API_KEY != '' }}
+      if: ${{ secrets.OPENROUTER_API_KEY != null }}
       uses: actions/upload-artifact@v3
       with:
         name: test-results
