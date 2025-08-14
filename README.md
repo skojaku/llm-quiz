@@ -156,3 +156,11 @@ uv run python -m llm_quiz.cli --quiz-file quiz.toml --api-key sk-xxx --quiz-mode
 # Local Ollama
 uv run python -m llm_quiz.cli --quiz-file quiz.toml --base-url http://localhost:11434/v1 --api-key dummy --quiz-model llama2
 ```
+
+
+## Contributions
+
+- [Claude](https://www.anthropic.com/claude-code)
+- [Vibe Kanban](https://www.vibekanban.com/)
+
+(Thanks LLMs for making this app extremely easy!).
