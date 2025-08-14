@@ -1,0 +1,81 @@
+name: Auto-format Code
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'llm_quiz/**'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+      - 'uv.lock'
+      - '.github/workflows/format.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'llm_quiz/**'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+      - 'uv.lock'
+      - '.github/workflows/format.yml'
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Run black formatting
+      run: |
+        uv run black llm_quiz/
+
+    - name: Run isort formatting
+      run: |
+        uv run isort llm_quiz/
+
+    - name: Check for changes
+      id: verify-changed-files
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit changes
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add llm_quiz/
+        git commit -m "Auto-format code with black and isort
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+    - name: Push changes
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
