@@ -107,21 +107,23 @@ class ValidateQuestionSimilarity(dspy.Signature):
     This validator checks if questions are duplicates or have significant content overlap.
     Questions should cover distinct topics and concepts to provide comprehensive assessment.
     
-    SIMILARITY CRITERIA:
-    - Flag duplicate_question if questions are essentially asking the same thing
-    - Flag overlapping_content if questions cover heavily overlapping concepts or knowledge areas
-    - Consider questions similar if they test the same specific knowledge or skills
-    - Different phrasings of the same core question should be flagged as duplicates"""
+    SIMILARITY CRITERIA - BE LENIENT:
+    - Flag duplicate_question ONLY if questions are essentially asking the exact same thing with near-identical wording
+    - Flag overlapping_content ONLY if questions test the exact same specific knowledge with no meaningful distinction
+    - Questions about different aspects, limitations, or applications of the same general topic should NOT be flagged as similar
+    - Questions that require different reasoning or demonstrate different understanding should be allowed
+    - BE GENEROUS - only flag as similar if they are genuinely redundant or nearly identical
+    - Different phrasings that test distinct concepts or reasoning should NOT be flagged as duplicates"""
 
     questions: List[str] = dspy.InputField(desc="List of all questions to check for similarity")
     answers: List[str] = dspy.InputField(desc="List of corresponding answers for context")
 
-    has_duplicates: bool = dspy.OutputField(desc="Whether any questions are duplicates or very similar")
-    has_overlaps: bool = dspy.OutputField(desc="Whether any questions have significant content overlap")
-    duplicate_pairs: List[str] = dspy.OutputField(desc="Pairs of question indices that are duplicates (e.g., '1-3', '2-4')")
-    overlap_pairs: List[str] = dspy.OutputField(desc="Pairs of question indices with overlapping content")
-    similarity_details: List[str] = dspy.OutputField(desc="Detailed explanation of similarities found")
-    overall_assessment: str = dspy.OutputField(desc="Overall assessment of question diversity and coverage")
+    has_duplicates: bool = dspy.OutputField(desc="Whether any questions are genuine duplicates (nearly identical). Be very conservative - only flag if truly redundant.")
+    has_overlaps: bool = dspy.OutputField(desc="Whether any questions test the exact same specific knowledge. Be lenient - different aspects of same topic are OK.")
+    duplicate_pairs: List[str] = dspy.OutputField(desc="Pairs of question indices that are genuine duplicates (e.g., '1-2')")
+    overlap_pairs: List[str] = dspy.OutputField(desc="Pairs of question indices with identical knowledge testing")
+    similarity_details: List[str] = dspy.OutputField(desc="Detailed explanation of each similarity found, including why it's considered similar or why it's acceptable")
+    overall_assessment: str = dspy.OutputField(desc="Overall assessment of question diversity and coverage, being generous with different aspects of same topic")
 
 
 class EvaluateAnswer(dspy.Signature):

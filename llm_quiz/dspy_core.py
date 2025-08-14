@@ -398,7 +398,29 @@ class DSPyQuizChallenge:
         logger.info("Validating question similarity and overlap...")
         similarity_analysis = self._validate_question_similarity(questions)
         if similarity_analysis['has_issues']:
+            print(f"\n🔍 SIMILARITY ANALYSIS RESULTS:")
+            print(f"   Found {len(similarity_analysis['duplicate_pairs'])} duplicate pairs and {len(similarity_analysis['overlap_pairs'])} overlap pairs")
+            
+            # Show the actual questions for reference
+            print(f"   📚 Your questions:")
+            for i, q in enumerate(questions, 1):
+                print(f"      Q{i}: {q.question}")
+            
+            if similarity_analysis['duplicate_pairs']:
+                print(f"   📋 Duplicate pairs: {', '.join(similarity_analysis['duplicate_pairs'])}")
+            if similarity_analysis['overlap_pairs']:
+                print(f"   🔄 Overlapping pairs: {', '.join(similarity_analysis['overlap_pairs'])}")
+                
+            print(f"   📝 Detailed analysis:")
+            for i, detail in enumerate(similarity_analysis['similarity_details'], 1):
+                print(f"      {i}. {detail}")
+            
+            print(f"   🎯 Overall assessment: {similarity_analysis['overall_assessment']}")
+            print(f"   ℹ️  Note: Similarity issues are informational and don't affect pass/fail if you legitimately won all questions\n")
+            
             logger.warning(f"Similarity issues found: {len(similarity_analysis['duplicate_pairs'])} duplicate pairs, {len(similarity_analysis['overlap_pairs'])} overlap pairs")
+        else:
+            print(f"✅ No similarity issues found between questions\n")
 
         question_results = []
         valid_count = 0
