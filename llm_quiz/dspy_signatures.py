@@ -48,11 +48,13 @@ class ValidateQuestion(dspy.Signature):
     """Validate a student's quiz question and their provided correct answer.
 
     CONTENT ALIGNMENT REQUIREMENTS:
-    - Flag context_mismatch if the question is completely unrelated to the course subject matter
+    - Flag context_mismatch ONLY if the question is completely unrelated to the course subject matter (use sparingly)
     - Flag weak_context_alignment if the question is only tangentially related or doesn't align well with the provided context materials
     - Questions should demonstrate understanding of concepts from the course material, either explicitly covered OR reasonably derivable from the material
     - Questions may explore implications, limitations, or extensions of core concepts if they stem logically from the provided context
     - ALLOW questions that require reasonable inference or analytical thinking based on the foundational material
+    - ALLOW questions about limitations, shortcomings, or edge cases of concepts covered in the material, even if these limitations are not explicitly mentioned but can be logically derived
+    - BE GENEROUS in allowing questions that demonstrate deeper understanding through critical analysis of core concepts
     
     CLARITY AND SPECIFICITY REQUIREMENTS:
     - Flag vague_question if the question lacks specificity or is too general
@@ -71,7 +73,7 @@ class ValidateQuestion(dspy.Signature):
 
     is_valid: bool = dspy.OutputField(desc="Whether the question is valid and acceptable")
     issues: List[ValidationIssue] = dspy.OutputField(
-        desc="List of specific validation issues found (check for context_mismatch, weak_context_alignment, vague_question, ambiguous_wording, incomplete_context). Be lenient with context_mismatch - allow questions that reasonably derive from or extend core concepts."
+        desc="List of specific validation issues found (check for context_mismatch, weak_context_alignment, vague_question, ambiguous_wording, incomplete_context). Be VERY lenient with context_mismatch - allow questions that reasonably derive from, extend, or critically analyze core concepts. Questions about limitations or edge cases of covered concepts should be accepted even if not explicitly mentioned in materials."
     )
     confidence: Literal["HIGH", "MEDIUM", "LOW"] = dspy.OutputField(
         desc="Confidence in validation decision"
