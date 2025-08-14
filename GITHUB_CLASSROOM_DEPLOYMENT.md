@@ -53,8 +53,6 @@ Edit `config.toml` to include your course materials:
 [context]
 # Context materials - URLs to fetch for providing context to the quiz model
 urls = [
-    "https://raw.githubusercontent.com/YOUR-USERNAME/YOUR-COURSE-REPO/main/docs/lecture1.md",
-    "https://raw.githubusercontent.com/YOUR-USERNAME/YOUR-COURSE-REPO/main/slides/week1.md",
     # Add more URLs as needed
 ]
 ```
@@ -145,7 +143,7 @@ The autograding system works as follows:
 
 Students receive detailed feedback including:
 - Which questions stumped the AI (✅ wins)
-- Which questions the AI answered correctly (❌ losses)  
+- Which questions the AI answered correctly (❌ losses)
 - Specific suggestions for improving questions that didn't work
 - Overall success rate
 
@@ -167,26 +165,3 @@ Students receive detailed feedback including:
 
 5. **Students get 0 points despite good questions**
    - Solution: Check that context URLs are relevant to the questions being asked
-
-### Debug Mode:
-
-To enable verbose logging for troubleshooting, temporarily edit `config.toml`:
-
-```toml
-[output]
-verbose = true
-```
-
-## Cost Estimation
-
-Typical costs per student submission:
-- With default models: ~$0.01-0.05 per quiz
-- With GPT-4: ~$0.10-0.25 per quiz
-
-Costs depend on:
-- Number of questions per quiz
-- Length of context materials
-- Models chosen
-- Question complexity
-
-For a class of 50 students with 3 quiz submissions each, expect approximately $1.50-37.50 in API costs for the semester with default models.
