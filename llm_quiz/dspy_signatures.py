@@ -18,10 +18,10 @@ class ValidationIssue(str, Enum):
     PROMPT_INJECTION = "prompt_injection"
     ANSWER_QUALITY = "answer_quality"
     CONTEXT_MISMATCH = (
-        "context_mismatch"  # Question is completely unrelated to course topic
+        "context_mismatch"  # Question is completely unrelated to course topic (use sparingly - allow reasonable extensions)
     )
     WEAK_CONTEXT_ALIGNMENT = (
-        "weak_context_alignment"  # Question is tangentially related but doesn't align well with context
+        "weak_context_alignment"  # Question is tangentially related but doesn't align well with context (consider if derivable from material)
     )
     VAGUE_QUESTION = "vague_question"  # Question lacks specificity or clarity
     AMBIGUOUS_WORDING = "ambiguous_wording"  # Question has multiple interpretations
@@ -50,8 +50,9 @@ class ValidateQuestion(dspy.Signature):
     CONTENT ALIGNMENT REQUIREMENTS:
     - Flag context_mismatch if the question is completely unrelated to the course subject matter
     - Flag weak_context_alignment if the question is only tangentially related or doesn't align well with the provided context materials
-    - Questions should demonstrate understanding of specific concepts, theories, or examples from the context
-    - Questions should be answerable using the provided context materials
+    - Questions should demonstrate understanding of concepts from the course material, either explicitly covered OR reasonably derivable from the material
+    - Questions may explore implications, limitations, or extensions of core concepts if they stem logically from the provided context
+    - ALLOW questions that require reasonable inference or analytical thinking based on the foundational material
     
     CLARITY AND SPECIFICITY REQUIREMENTS:
     - Flag vague_question if the question lacks specificity or is too general
@@ -61,7 +62,8 @@ class ValidateQuestion(dspy.Signature):
     
     CONTENT DEPTH REQUIREMENTS:
     - Questions should require understanding beyond simple memorization
-    - Questions should connect concepts or require analysis/application of knowledge"""
+    - Questions should connect concepts or require analysis/application of knowledge
+    - Higher-level questions that explore limitations, implications, or applications of core concepts are encouraged"""
 
     question: str = dspy.InputField(desc="The student's quiz question to validate")
     answer: str = dspy.InputField(desc="The student's provided correct answer")
@@ -69,7 +71,7 @@ class ValidateQuestion(dspy.Signature):
 
     is_valid: bool = dspy.OutputField(desc="Whether the question is valid and acceptable")
     issues: List[ValidationIssue] = dspy.OutputField(
-        desc="List of specific validation issues found (check for context_mismatch, weak_context_alignment, vague_question, ambiguous_wording, incomplete_context)"
+        desc="List of specific validation issues found (check for context_mismatch, weak_context_alignment, vague_question, ambiguous_wording, incomplete_context). Be lenient with context_mismatch - allow questions that reasonably derive from or extend core concepts."
     )
     confidence: Literal["HIGH", "MEDIUM", "LOW"] = dspy.OutputField(
         desc="Confidence in validation decision"
