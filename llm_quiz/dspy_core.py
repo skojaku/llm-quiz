@@ -77,9 +77,9 @@ class QuizResult:
     student_wins: bool  # True if student wins (LLM got it wrong)
     evaluation_explanation: str  # Explanation of how LLM's answer was evaluated
     validation_issues: List[str]  # Issues found with student's question
-    revision_guidance: Optional[
-        RevisionGuidance
-    ] = None  # Guidance for improving student's question
+    revision_guidance: Optional[RevisionGuidance] = (
+        None  # Guidance for improving student's question
+    )
     difficulty_assessment: Optional[str] = None  # Assessment of question difficulty
     improvement_suggestions: List[str] = None  # Suggestions for improving student's question
     error: Optional[str] = None
@@ -272,9 +272,11 @@ class DSPyQuizChallenge:
             guidance = self.revision_guide_generator(
                 question=question.question,
                 answer=question.answer,
-                validation_issues=[issue.value for issue in validation_result.issues]
-                if hasattr(validation_result, "issues")
-                else [],
+                validation_issues=(
+                    [issue.value for issue in validation_result.issues]
+                    if hasattr(validation_result, "issues")
+                    else []
+                ),
                 llm_response=llm_response,
                 evaluation_result=evaluation_result.explanation if evaluation_result else None,
                 context_topics=context_topics,
