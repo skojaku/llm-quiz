@@ -13,6 +13,8 @@ env:
 jobs:
   demo-quiz-challenge:
     runs-on: ubuntu-latest
+    env:
+      API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     
     steps:
     - name: Checkout code
@@ -39,11 +41,11 @@ jobs:
         echo
         
         # Run with API key if available, otherwise show what would happen
-        if [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+        if [ -n "${{ env.API_KEY }}" ]; then
           echo "✅ API key found - running live demo"
           uv run python -m llm_quiz.cli \
             --quiz-file quiz.toml \
-            --api-key ${{ secrets.OPENROUTER_API_KEY }} \
+            --api-key ${{ env.API_KEY }} \
             --output demo-results.json || true
           
           if [ -f "demo-results.json" ]; then
@@ -62,7 +64,7 @@ jobs:
         fi
 
     - name: Upload demo results
-      if: ${{ secrets.OPENROUTER_API_KEY != null }}
+      if: ${{ env.API_KEY != '' }}
       uses: actions/upload-artifact@v3
       with:
         name: demo-results
