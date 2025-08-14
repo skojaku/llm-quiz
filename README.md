@@ -1,6 +1,6 @@
 # LLM Quiz Challenge
 
-[![Autograding Tests](https://github.com/skojaku/llm-quiz/actions/workflows/classroom.yml/badge.svg)](https://github.com/skojaku/llm-quiz/actions/workflows/classroom.yml)
+[![Demo - AI Quiz Challenge](https://github.com/skojaku/llm-quiz/actions/workflows/demo.yml/badge.svg)](https://github.com/skojaku/llm-quiz/actions/workflows/demo.yml)
 
 Writing great questions is one of the best ways to deepen your understanding of a subject.
 As an instructor, I often found myself reviewing course materials to ensure my quiz questions went beyond surface-level facts and required nuanced understanding.
