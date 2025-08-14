@@ -1,0 +1,17 @@
+# Test quiz with overlapping/similar questions to demonstrate the improved validation
+
+[[questions]]
+question = "What is the main concept behind small-world networks?"
+answer = "Small-world networks are characterized by high clustering and short path lengths, where most nodes can be reached from others through a small number of steps."
+
+[[questions]]
+question = "How would you describe the key property of small-world networks?"  
+answer = "They have high clustering coefficient and small average path length, allowing for efficient information flow."
+
+[[questions]]
+question = "What defines the six degrees of separation phenomenon?"
+answer = "It's the idea that any two people in the world are connected by at most six social connections, demonstrating small-world network properties in social systems."
+
+[[questions]]
+question = "Explain the concept of six degrees of separation."
+answer = "The six degrees of separation is a concept that suggests everyone is connected to everyone else by no more than six intermediate personal relationships."

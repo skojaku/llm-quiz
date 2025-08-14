@@ -18,11 +18,16 @@ class ValidationIssue(str, Enum):
     PROMPT_INJECTION = "prompt_injection"
     ANSWER_QUALITY = "answer_quality"
     CONTEXT_MISMATCH = (
-        "context_mismatch"  # Only use when question is completely unrelated to course topic
+        "context_mismatch"  # Question is completely unrelated to course topic
+    )
+    WEAK_CONTEXT_ALIGNMENT = (
+        "weak_context_alignment"  # Question is tangentially related but doesn't align well with context
     )
     VAGUE_QUESTION = "vague_question"  # Question lacks specificity or clarity
     AMBIGUOUS_WORDING = "ambiguous_wording"  # Question has multiple interpretations
     INCOMPLETE_CONTEXT = "incomplete_context"  # Question lacks sufficient context to answer clearly
+    DUPLICATE_QUESTION = "duplicate_question"  # Question is very similar to another question
+    OVERLAPPING_CONTENT = "overlapping_content"  # Question covers content heavily overlapping with another
 
 
 class ParseQuestionAndAnswer(dspy.Signature):
@@ -42,16 +47,21 @@ class ParseQuestionAndAnswer(dspy.Signature):
 class ValidateQuestion(dspy.Signature):
     """Validate a student's quiz question and their provided correct answer.
 
-    Questions should be considered valid if they are generally relevant to the course topic
-    (network science, small-world networks, etc.) even if they don't reference specific
-    details from the context. Only flag context_mismatch if the question is completely
-    unrelated to the course subject matter.
+    CONTENT ALIGNMENT REQUIREMENTS:
+    - Flag context_mismatch if the question is completely unrelated to the course subject matter
+    - Flag weak_context_alignment if the question is only tangentially related or doesn't align well with the provided context materials
+    - Questions should demonstrate understanding of specific concepts, theories, or examples from the context
+    - Questions should be answerable using the provided context materials
     
-    Pay special attention to question clarity and specificity:
+    CLARITY AND SPECIFICITY REQUIREMENTS:
     - Flag vague_question if the question lacks specificity or is too general
     - Flag ambiguous_wording if the question has multiple valid interpretations
     - Flag incomplete_context if the question lacks sufficient context to answer clearly
-    - Questions should be precise, unambiguous, and clearly worded"""
+    - Questions should be precise, unambiguous, and clearly worded
+    
+    CONTENT DEPTH REQUIREMENTS:
+    - Questions should require understanding beyond simple memorization
+    - Questions should connect concepts or require analysis/application of knowledge"""
 
     question: str = dspy.InputField(desc="The student's quiz question to validate")
     answer: str = dspy.InputField(desc="The student's provided correct answer")
@@ -59,7 +69,7 @@ class ValidateQuestion(dspy.Signature):
 
     is_valid: bool = dspy.OutputField(desc="Whether the question is valid and acceptable")
     issues: List[ValidationIssue] = dspy.OutputField(
-        desc="List of specific validation issues found (check for vague_question, ambiguous_wording, incomplete_context)"
+        desc="List of specific validation issues found (check for context_mismatch, weak_context_alignment, vague_question, ambiguous_wording, incomplete_context)"
     )
     confidence: Literal["HIGH", "MEDIUM", "LOW"] = dspy.OutputField(
         desc="Confidence in validation decision"
@@ -85,6 +95,29 @@ class AnswerQuizQuestion(dspy.Signature):
     answer: str = dspy.OutputField(
         desc="Concise but thorough answer to the question (max 300 words)"
     )
+
+
+class ValidateQuestionSimilarity(dspy.Signature):
+    """Check for similarity and overlap between multiple quiz questions.
+    
+    This validator checks if questions are duplicates or have significant content overlap.
+    Questions should cover distinct topics and concepts to provide comprehensive assessment.
+    
+    SIMILARITY CRITERIA:
+    - Flag duplicate_question if questions are essentially asking the same thing
+    - Flag overlapping_content if questions cover heavily overlapping concepts or knowledge areas
+    - Consider questions similar if they test the same specific knowledge or skills
+    - Different phrasings of the same core question should be flagged as duplicates"""
+
+    questions: List[str] = dspy.InputField(desc="List of all questions to check for similarity")
+    answers: List[str] = dspy.InputField(desc="List of corresponding answers for context")
+
+    has_duplicates: bool = dspy.OutputField(desc="Whether any questions are duplicates or very similar")
+    has_overlaps: bool = dspy.OutputField(desc="Whether any questions have significant content overlap")
+    duplicate_pairs: List[str] = dspy.OutputField(desc="Pairs of question indices that are duplicates (e.g., '1-3', '2-4')")
+    overlap_pairs: List[str] = dspy.OutputField(desc="Pairs of question indices with overlapping content")
+    similarity_details: List[str] = dspy.OutputField(desc="Detailed explanation of similarities found")
+    overall_assessment: str = dspy.OutputField(desc="Overall assessment of question diversity and coverage")
 
 
 class EvaluateAnswer(dspy.Signature):
