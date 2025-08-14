@@ -1,5 +1,7 @@
 # LLM Quiz Challenge
 
+[![Autograding Tests](https://github.com/skojaku/llm-quiz/actions/workflows/classroom.yml/badge.svg)](https://github.com/skojaku/llm-quiz/actions/workflows/classroom.yml)
+
 Writing great questions is one of the best ways to deepen your understanding of a subject.
 As an instructor, I often found myself reviewing course materials to ensure my quiz questions went beyond surface-level facts and required nuanced understanding.
 This inspired me to turn the tables! What if students created their own challenging questions as a way to learn more effectively?

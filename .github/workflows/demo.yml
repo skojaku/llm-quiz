@@ -62,7 +62,7 @@ jobs:
         fi
 
     - name: Upload demo results
-      if: ${{ secrets.OPENROUTER_API_KEY != '' }}
+      if: ${{ secrets.OPENROUTER_API_KEY != null }}
       uses: actions/upload-artifact@v3
       with:
         name: demo-results
