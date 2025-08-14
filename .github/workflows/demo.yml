@@ -65,7 +65,7 @@ jobs:
 
     - name: Upload demo results
       if: ${{ env.API_KEY != '' }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: demo-results
         path: demo-results.json
