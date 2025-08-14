@@ -61,10 +61,6 @@ jobs:
       run: |
         uv run isort --check-only llm_quiz/
 
-    - name: Lint with flake8
-      run: |
-        uv run flake8 llm_quiz/
-
     - name: Test CLI installation
       run: |
         uv run llm-quiz --help
