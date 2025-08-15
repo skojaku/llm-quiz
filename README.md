@@ -13,9 +13,7 @@ This repository provides a simple command line tool that lets students create qu
 
 ## How it works
 
-<p align="center" width="80%">
-  <img src="./demo.gif" alt="Demo" style="max-width:80%;">
-</p>
+[./demo.gif]
 
 Students create quiz questions in a TOML file, then the tool uses AI to try answering them. If the AI fails, the student wins!
 
