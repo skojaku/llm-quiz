@@ -128,14 +128,14 @@ class DSPyQuizChallenge:
 
         # Set up DSPy LM - we'll create a simple wrapper for the existing API
         self.lm = self._create_dspy_lm()
-        dspy.settings.configure(lm=self.lm)
-
+        # Don't configure globally - use dspy.context() in async environments
+        
         # Load context content if provided
         self.context_content = (
             self._load_context_from_urls_file(context_urls_file) if context_urls_file else None
         )
 
-        # Initialize DSPy predictors
+        # Initialize DSPy predictors - they will use the context when called
         self.question_parser = dspy.Predict(ParseQuestionAndAnswer)
         self.question_validator = dspy.ChainOfThought(ValidateQuestion)
         self.similarity_validator = dspy.ChainOfThought(ValidateQuestionSimilarity)
@@ -273,11 +273,15 @@ class DSPyQuizChallenge:
         self, question_results: List[QuizResult], similarity_analysis: Dict[str, Any]
     ) -> None:
         """Apply similarity issues to individual question results."""
-        if not similarity_analysis['has_issues']:
+        if similarity_analysis is None:
+            logger.warning("Similarity analysis is None, skipping issue application")
+            return
+        
+        if not similarity_analysis.get('has_issues', False):
             return
 
         # Parse duplicate pairs and add issues to affected questions
-        for pair_str in similarity_analysis['duplicate_pairs']:
+        for pair_str in similarity_analysis.get('duplicate_pairs', []):
             try:
                 if '-' in pair_str:
                     idx1, idx2 = map(int, pair_str.split('-'))
@@ -295,7 +299,7 @@ class DSPyQuizChallenge:
                 logger.warning(f"Error parsing duplicate pair '{pair_str}': {e}")
 
         # Parse overlap pairs and add issues to affected questions  
-        for pair_str in similarity_analysis['overlap_pairs']:
+        for pair_str in similarity_analysis.get('overlap_pairs', []):
             try:
                 if '-' in pair_str:
                     idx1, idx2 = map(int, pair_str.split('-'))
@@ -365,27 +369,42 @@ class DSPyQuizChallenge:
         try:
             context_topics = self._extract_context_topics()
 
-            guidance = self.revision_guide_generator(
-                question=question.question,
-                answer=question.answer,
-                validation_issues=(
-                    [issue.value for issue in validation_result.issues]
-                    if hasattr(validation_result, "issues")
-                    else []
-                ),
-                llm_response=llm_response,
-                evaluation_result=evaluation_result.explanation if evaluation_result else None,
-                context_topics=context_topics,
-            )
+            # Add extra error handling around the DSPy predictor call
+            try:
+                guidance = self.revision_guide_generator(
+                    question=question.question,
+                    answer=question.answer,
+                    validation_issues=(
+                        [issue.value if hasattr(issue, 'value') else str(issue) for issue in validation_result.issues]
+                        if validation_result and hasattr(validation_result, "issues")
+                        else []
+                    ),
+                    llm_response=llm_response,
+                    evaluation_result=getattr(evaluation_result, 'explanation', None) if evaluation_result else None,
+                    context_topics=context_topics,
+                )
+            except Exception as e:
+                logger.error(f"Error in revision_guide_generator DSPy call: {e}")
+                guidance = None
+            
+            # Check if guidance is None
+            if guidance is None:
+                logger.warning("Revision guide generator returned None, creating fallback guidance")
+                guidance = type('MockGuidance', (), {
+                    'revision_priority': 'MEDIUM',
+                    'specific_issues': ['Unable to analyze question details due to technical error'],
+                    'concrete_suggestions': ['Review the question against course materials'],
+                    'example_improvements': ['Make the question more specific and clear']
+                })()
 
             return RevisionGuidance(
-                revision_priority=guidance.revision_priority,
-                specific_issues=guidance.specific_issues,
-                concrete_suggestions=guidance.concrete_suggestions,
-                example_improvements=guidance.example_improvements,
-                difficulty_adjustment=guidance.difficulty_adjustment,
-                context_alignment=guidance.context_alignment,
-                clarity_improvements=guidance.clarity_improvements,
+                revision_priority=getattr(guidance, 'revision_priority', 'MEDIUM'),
+                specific_issues=getattr(guidance, 'specific_issues', ['Unable to analyze question details']),
+                concrete_suggestions=getattr(guidance, 'concrete_suggestions', ['Review the question against course materials']),
+                example_improvements=getattr(guidance, 'example_improvements', ['Make the question more specific']),
+                difficulty_adjustment=getattr(guidance, 'difficulty_adjustment', 'Review question complexity'),
+                context_alignment=getattr(guidance, 'context_alignment', 'Align with course topics'),
+                clarity_improvements=getattr(guidance, 'clarity_improvements', ['Make the question clearer']),
             )
         except Exception as e:
             logger.error(f"Error generating revision guidance: {e}")
@@ -405,13 +424,20 @@ class DSPyQuizChallenge:
     ) -> QuizResults:
         """Run the complete quiz challenge using DSPy structured output."""
         logger.info(f"Starting DSPy quiz challenge with {len(questions)} questions")
-
+        
         # Step 1: Validate question similarity first
         logger.info("Validating question similarity and overlap...")
-        similarity_analysis = self._validate_question_similarity(questions)
-        if similarity_analysis['has_issues']:
+        # Skip similarity analysis for single questions to avoid NoneType errors
+        similarity_analysis = None
+        if len(questions) > 1:
+            similarity_analysis = self._validate_question_similarity(questions)
+        else:
+            logger.info("Only one question provided, skipping similarity analysis")
+        if similarity_analysis and similarity_analysis.get('has_issues', False):
             print(f"\n🔍 SIMILARITY ANALYSIS RESULTS:")
-            print(f"   Found {len(similarity_analysis['duplicate_pairs'])} duplicate pairs and {len(similarity_analysis['overlap_pairs'])} overlap pairs")
+            duplicate_count = len(similarity_analysis.get('duplicate_pairs', []))
+            overlap_count = len(similarity_analysis.get('overlap_pairs', []))
+            print(f"   Found {duplicate_count} duplicate pairs and {overlap_count} overlap pairs")
             
             # Show the actual questions for reference
             print(f"   📚 Your questions:")
@@ -474,7 +500,18 @@ class DSPyQuizChallenge:
 
                 # Step 2: Generate revision guidance for all questions (valid or invalid)
                 pbar.set_description(f"Q{question.number}: Generating guidance")
-                revision_guidance = self._generate_revision_guidance(question, validation)
+                try:
+                    revision_guidance = self._generate_revision_guidance(question, validation)
+                except Exception as e:
+                    logger.error(f"Error generating revision guidance for question {question.number}: {e}")
+                    # Create a fallback revision guidance
+                    revision_guidance = RevisionGuidance(
+                        revision_priority='MEDIUM',
+                        specific_issues=['Unable to analyze question due to technical error'],
+                        concrete_suggestions=['Review the question against course materials'],
+                        example_improvements=['Make the question more specific and clear'],
+                        context_alignment='Unknown'
+                    )
                 pbar.update(1)  # Step 2 complete
 
                 is_valid = getattr(validation, 'is_valid', False)
@@ -598,13 +635,14 @@ class DSPyQuizChallenge:
 
         # Apply similarity issues to individual questions after all processing is complete
         logger.info("Applying similarity issues to question results...")
-        self._apply_similarity_issues_to_questions(question_results, similarity_analysis)
+        if similarity_analysis is not None:
+            self._apply_similarity_issues_to_questions(question_results, similarity_analysis)
         
         # Add similarity issues to the overall validation issues list
-        if similarity_analysis['has_issues']:
-            if similarity_analysis['duplicate_pairs']:
+        if similarity_analysis is not None and similarity_analysis.get('has_issues', False):
+            if similarity_analysis.get('duplicate_pairs', []):
                 all_validation_issues.extend([ValidationIssue.DUPLICATE_QUESTION.value] * len(similarity_analysis['duplicate_pairs']))
-            if similarity_analysis['overlap_pairs']:
+            if similarity_analysis.get('overlap_pairs', []):
                 all_validation_issues.extend([ValidationIssue.OVERLAPPING_CONTENT.value] * len(similarity_analysis['overlap_pairs']))
 
         # Calculate results
