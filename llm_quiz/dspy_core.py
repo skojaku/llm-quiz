@@ -239,13 +239,25 @@ class DSPyQuizChallenge:
                 questions=[q.question for q in questions],
                 answers=[q.answer for q in questions]
             )
+            
+            # Check if similarity_result is None or missing required attributes
+            if similarity_result is None:
+                raise ValueError("Similarity validator returned None")
+            
+            # Safely access attributes with defaults
+            has_duplicates = getattr(similarity_result, 'has_duplicates', False)
+            has_overlaps = getattr(similarity_result, 'has_overlaps', False)
+            duplicate_pairs = getattr(similarity_result, 'duplicate_pairs', [])
+            overlap_pairs = getattr(similarity_result, 'overlap_pairs', [])
+            similarity_details = getattr(similarity_result, 'similarity_details', [])
+            overall_assessment = getattr(similarity_result, 'overall_assessment', 'Unable to assess similarity')
 
             return {
-                'has_issues': similarity_result.has_duplicates or similarity_result.has_overlaps,
-                'duplicate_pairs': similarity_result.duplicate_pairs,
-                'overlap_pairs': similarity_result.overlap_pairs,
-                'similarity_details': similarity_result.similarity_details,
-                'overall_assessment': similarity_result.overall_assessment
+                'has_issues': has_duplicates or has_overlaps,
+                'duplicate_pairs': duplicate_pairs,
+                'overlap_pairs': overlap_pairs,
+                'similarity_details': similarity_details,
+                'overall_assessment': overall_assessment
             }
         except Exception as e:
             logger.error(f"Error validating question similarity: {e}")
@@ -450,8 +462,13 @@ class DSPyQuizChallenge:
                     answer=question.answer,
                     context_content=self.context_content,
                 )
+                
+                # Check if validation result is None
+                if validation is None:
+                    raise ValueError("Question validator returned None")
+                    
                 logger.debug(
-                    f"Validation result: valid={validation.is_valid}, reason={validation.reason}"
+                    f"Validation result: valid={getattr(validation, 'is_valid', False)}, reason={getattr(validation, 'reason', 'Unknown')}"
                 )
                 pbar.update(1)  # Step 1 complete
 
@@ -460,25 +477,28 @@ class DSPyQuizChallenge:
                 revision_guidance = self._generate_revision_guidance(question, validation)
                 pbar.update(1)  # Step 2 complete
 
-                if not validation.is_valid:
+                is_valid = getattr(validation, 'is_valid', False)
+                if not is_valid:
                     pbar.set_description(f"Q{question.number}: Question invalid, skipping")
+                    reason = getattr(validation, 'reason', 'Unknown validation error')
                     logger.warning(
-                        f"Student's question {question.number} failed validation: {validation.reason}"
+                        f"Student's question {question.number} failed validation: {reason}"
                     )
-                    all_validation_issues.extend([issue.value for issue in validation.issues])
+                    issues = getattr(validation, 'issues', [])
+                    all_validation_issues.extend([issue.value if hasattr(issue, 'value') else str(issue) for issue in issues])
 
                     result = QuizResult(
                         question=question,
                         llm_answer="Question rejected during validation",
                         is_valid=False,
                         student_wins=False,
-                        evaluation_explanation=f"Invalid student question: {validation.reason}",
-                        validation_issues=[issue.value for issue in validation.issues],
+                        evaluation_explanation=f"Invalid student question: {reason}",
+                        validation_issues=[issue.value if hasattr(issue, 'value') else str(issue) for issue in issues],
                         revision_guidance=revision_guidance,
-                        difficulty_assessment=validation.difficulty_assessment,
-                        improvement_suggestions=validation.revision_suggestions,
+                        difficulty_assessment=getattr(validation, 'difficulty_assessment', 'APPROPRIATE'),
+                        improvement_suggestions=getattr(validation, 'revision_suggestions', []),
                         clarity_score=getattr(validation, 'clarity_score', None),
-                        error=validation.reason,
+                        error=reason,
                     )
                     question_results.append(result)
                     # Skip remaining 3 steps for invalid questions
@@ -499,7 +519,13 @@ class DSPyQuizChallenge:
                     llm_response = self.question_answerer(
                         question=question.question, context_content=self.context_content
                     )
-                logger.debug(f"LLM's answer: {llm_response.answer[:100]}...")
+                
+                # Check if llm_response is None
+                if llm_response is None:
+                    raise ValueError("Question answerer returned None")
+                
+                llm_answer = getattr(llm_response, 'answer', 'Unable to generate answer')
+                logger.debug(f"LLM's answer: {llm_answer[:100]}...")
                 pbar.update(1)  # Step 3 complete
 
                 # Step 4: Evaluate LLM's answer against student's correct answer using DSPy
@@ -508,15 +534,22 @@ class DSPyQuizChallenge:
                 evaluation = self.answer_evaluator(
                     question=question.question,
                     correct_answer=question.answer,
-                    llm_answer=llm_response.answer,
+                    llm_answer=llm_answer,
                 )
+                
+                # Check if evaluation is None
+                if evaluation is None:
+                    raise ValueError("Answer evaluator returned None")
+                    
+                verdict = getattr(evaluation, 'verdict', 'INCORRECT')
+                student_won_this_question = getattr(evaluation, 'student_wins', False)
                 logger.debug(
-                    f"Evaluation: verdict={evaluation.verdict}, student_wins={evaluation.student_wins}"
+                    f"Evaluation: verdict={verdict}, student_wins={student_won_this_question}"
                 )
                 pbar.update(1)  # Step 4 complete
 
                 # Step 5: Finalize results
-                if evaluation.student_wins:
+                if student_won_this_question:
                     student_wins += 1
                     pbar.set_description(f"Q{question.number}: Complete - Student wins!")
                 else:
@@ -525,19 +558,19 @@ class DSPyQuizChallenge:
 
                 # Generate revision guidance for valid questions too
                 revision_guidance = self._generate_revision_guidance(
-                    question, validation, llm_response.answer, evaluation
+                    question, validation, llm_answer, evaluation
                 )
 
                 result = QuizResult(
                     question=question,
-                    llm_answer=llm_response.answer,
+                    llm_answer=llm_answer,
                     is_valid=True,
-                    student_wins=evaluation.student_wins,
-                    evaluation_explanation=evaluation.explanation,
+                    student_wins=student_won_this_question,
+                    evaluation_explanation=getattr(evaluation, 'explanation', 'No explanation available'),
                     validation_issues=[],
                     revision_guidance=revision_guidance,
-                    difficulty_assessment=validation.difficulty_assessment,
-                    improvement_suggestions=evaluation.improvement_suggestions,
+                    difficulty_assessment=getattr(validation, 'difficulty_assessment', 'APPROPRIATE'),
+                    improvement_suggestions=getattr(evaluation, 'improvement_suggestions', []),
                     clarity_score=getattr(validation, 'clarity_score', None),
                 )
                 question_results.append(result)
@@ -579,7 +612,6 @@ class DSPyQuizChallenge:
         success_rate = student_wins / evaluated_questions if evaluated_questions > 0 else 0.0
         
         # Student passes if they win all valid questions - similarity issues are informational only
-        has_similarity_issues = similarity_analysis['has_issues']
         student_passes = (
             valid_count == len(questions) and 
             evaluated_questions > 0 and 
@@ -599,8 +631,13 @@ class DSPyQuizChallenge:
                 validation_issues=all_validation_issues,
                 success_rate=success_rate,
             )
-            feedback_summary = feedback.feedback_summary
-            github_result = feedback.github_classroom_marker
+            
+            # Check if feedback is None
+            if feedback is None:
+                raise ValueError("Feedback generator returned None")
+            
+            feedback_summary = getattr(feedback, 'feedback_summary', 'Unable to generate feedback')
+            github_result = getattr(feedback, 'github_classroom_marker', 'STUDENTS_QUIZ_KEIKO_LOSE')
             logger.debug(f"DSPy feedback generated successfully: {feedback_summary[:100]}...")
         except Exception as e:
             logger.error(f"Error generating feedback: {e}")
