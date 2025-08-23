@@ -117,6 +117,9 @@ class DSPyQuizChallenge:
         quiz_model: str,
         evaluator_model: str,
         context_urls_file: Optional[str] = None,
+        context_content: Optional[str] = None,
+        enable_detailed_feedback: bool = False,
+        dspy_lm: Optional[dspy.LM] = None,
     ):
         """Initialize the DSPy-based quiz challenge system."""
 
@@ -126,23 +129,30 @@ class DSPyQuizChallenge:
         self.quiz_model = quiz_model
         self.evaluator_model = evaluator_model
 
-        # Set up DSPy LM - we'll create a simple wrapper for the existing API
-        self.lm = self._create_dspy_lm()
-        # Don't configure globally - use dspy.context() in async environments
-        
-        # Load context content if provided
-        self.context_content = (
-            self._load_context_from_urls_file(context_urls_file) if context_urls_file else None
-        )
+        # Set up DSPy LM - use provided instance or create one
+        self.lm = dspy_lm if dspy_lm is not None else self._create_dspy_lm()
+
+        # Load context content from URLs file or use provided content directly
+        if context_content:
+            # Use provided content directly
+            self.context_content = context_content
+        elif context_urls_file:
+            # Load from URLs file as before
+            self.context_content = self._load_context_from_urls_file(context_urls_file)
+        else:
+            self.context_content = None
+
+        # Store configuration
+        self.enable_detailed_feedback = enable_detailed_feedback
 
         # Initialize DSPy predictors - they will use the context when called
         self.question_parser = dspy.Predict(ParseQuestionAndAnswer)
         self.question_validator = dspy.ChainOfThought(ValidateQuestion)
         self.similarity_validator = dspy.ChainOfThought(ValidateQuestionSimilarity)
-        self.question_answerer = dspy.ChainOfThought(AnswerQuizQuestion)
+        self.question_answerer = dspy.Predict(AnswerQuizQuestion)
         self.answer_evaluator = dspy.ChainOfThought(EvaluateAnswer)
-        self.feedback_generator = dspy.ChainOfThought(GenerateFeedback)
-        self.revision_guide_generator = dspy.ChainOfThought(GenerateRevisionGuidance)
+        self.feedback_generator = dspy.Predict(GenerateFeedback)
+        self.revision_guide_generator = dspy.Predict(GenerateRevisionGuidance)
 
         logger.info(
             f"DSPy Quiz Challenge initialized with models: quiz={quiz_model}, evaluator={evaluator_model}"
@@ -235,15 +245,16 @@ class DSPyQuizChallenge:
 
         try:
             logger.debug(f"Checking similarity for {len(questions)} questions...")
-            similarity_result = self.similarity_validator(
-                questions=[q.question for q in questions],
-                answers=[q.answer for q in questions]
-            )
-            
+            with dspy.context(lm=self.lm):
+                similarity_result = self.similarity_validator(
+                    questions=[q.question for q in questions],
+                    answers=[q.answer for q in questions]
+                )
+
             # Check if similarity_result is None or missing required attributes
             if similarity_result is None:
                 raise ValueError("Similarity validator returned None")
-            
+
             # Safely access attributes with defaults
             has_duplicates = getattr(similarity_result, 'has_duplicates', False)
             has_overlaps = getattr(similarity_result, 'has_overlaps', False)
@@ -276,7 +287,7 @@ class DSPyQuizChallenge:
         if similarity_analysis is None:
             logger.warning("Similarity analysis is None, skipping issue application")
             return
-        
+
         if not similarity_analysis.get('has_issues', False):
             return
 
@@ -290,7 +301,7 @@ class DSPyQuizChallenge:
                         idx1 -= 1
                     if idx2 > 0 and idx2 <= len(question_results):
                         idx2 -= 1
-                    
+
                     for idx in [idx1, idx2]:
                         if 0 <= idx < len(question_results):
                             if ValidationIssue.DUPLICATE_QUESTION.value not in question_results[idx].validation_issues:
@@ -298,7 +309,7 @@ class DSPyQuizChallenge:
             except (ValueError, IndexError) as e:
                 logger.warning(f"Error parsing duplicate pair '{pair_str}': {e}")
 
-        # Parse overlap pairs and add issues to affected questions  
+        # Parse overlap pairs and add issues to affected questions
         for pair_str in similarity_analysis.get('overlap_pairs', []):
             try:
                 if '-' in pair_str:
@@ -308,7 +319,7 @@ class DSPyQuizChallenge:
                         idx1 -= 1
                     if idx2 > 0 and idx2 <= len(question_results):
                         idx2 -= 1
-                    
+
                     for idx in [idx1, idx2]:
                         if 0 <= idx < len(question_results):
                             if ValidationIssue.OVERLAPPING_CONTENT.value not in question_results[idx].validation_issues:
@@ -371,11 +382,12 @@ class DSPyQuizChallenge:
 
             # Add extra error handling around the DSPy predictor call
             try:
-                guidance = self.revision_guide_generator(
-                    question=question.question,
-                    answer=question.answer,
-                    validation_issues=(
-                        [issue.value if hasattr(issue, 'value') else str(issue) for issue in validation_result.issues]
+                with dspy.context(lm=self.lm):
+                    guidance = self.revision_guide_generator(
+                        question=question.question,
+                        answer=question.answer,
+                        validation_issues=(
+                            [issue.value if hasattr(issue, 'value') else str(issue) for issue in validation_result.issues]
                         if validation_result and hasattr(validation_result, "issues")
                         else []
                     ),
@@ -386,7 +398,7 @@ class DSPyQuizChallenge:
             except Exception as e:
                 logger.error(f"Error in revision_guide_generator DSPy call: {e}")
                 guidance = None
-            
+
             # Check if guidance is None
             if guidance is None:
                 logger.warning("Revision guide generator returned None, creating fallback guidance")
@@ -424,7 +436,7 @@ class DSPyQuizChallenge:
     ) -> QuizResults:
         """Run the complete quiz challenge using DSPy structured output."""
         logger.info(f"Starting DSPy quiz challenge with {len(questions)} questions")
-        
+
         # Step 1: Validate question similarity first
         logger.info("Validating question similarity and overlap...")
         # Skip similarity analysis for single questions to avoid NoneType errors
@@ -438,24 +450,24 @@ class DSPyQuizChallenge:
             duplicate_count = len(similarity_analysis.get('duplicate_pairs', []))
             overlap_count = len(similarity_analysis.get('overlap_pairs', []))
             print(f"   Found {duplicate_count} duplicate pairs and {overlap_count} overlap pairs")
-            
+
             # Show the actual questions for reference
             print(f"   📚 Your questions:")
             for i, q in enumerate(questions, 1):
                 print(f"      Q{i}: {q.question}")
-            
+
             if similarity_analysis['duplicate_pairs']:
                 print(f"   📋 Duplicate pairs: {', '.join(similarity_analysis['duplicate_pairs'])}")
             if similarity_analysis['overlap_pairs']:
                 print(f"   🔄 Overlapping pairs: {', '.join(similarity_analysis['overlap_pairs'])}")
-                
+
             print(f"   📝 Detailed analysis:")
             for i, detail in enumerate(similarity_analysis['similarity_details'], 1):
                 print(f"      {i}. {detail}")
-            
+
             print(f"   🎯 Overall assessment: {similarity_analysis['overall_assessment']}")
             print(f"   ℹ️  Note: Similarity issues are informational and don't affect pass/fail if you legitimately won all questions\n")
-            
+
             logger.warning(f"Similarity issues found: {len(similarity_analysis['duplicate_pairs'])} duplicate pairs, {len(similarity_analysis['overlap_pairs'])} overlap pairs")
         else:
             print(f"✅ No similarity issues found between questions\n")
@@ -467,11 +479,11 @@ class DSPyQuizChallenge:
         all_validation_issues = []
 
         # Create progress bar with more granular steps
-        # Each question has: validate -> generate guidance -> LLM answer -> evaluate -> finalize
+        # Each question has: validate -> skip guidance -> LLM answer -> evaluate -> finalize
         # Add 1 extra step for similarity validation
         total_steps = len(questions) * 5 + 1
         pbar = tqdm(total=total_steps, desc="Processing quiz", unit="step")
-        
+
         # Mark similarity validation as complete
         pbar.set_description("Similarity validation complete")
         pbar.update(1)
@@ -483,35 +495,25 @@ class DSPyQuizChallenge:
                 # Step 1: Validate the student's question using DSPy
                 pbar.set_description(f"Q{question.number}: Validating question")
                 logger.debug(f"Validating student's question {question.number} with DSPy...")
-                validation = self.question_validator(
-                    question=question.question,
-                    answer=question.answer,
-                    context_content=self.context_content,
-                )
-                
+                with dspy.context(lm=self.lm):
+                    validation = self.question_validator(
+                        question=question.question,
+                        answer=question.answer,
+                        context_content=self.context_content,
+                    )
+
                 # Check if validation result is None
                 if validation is None:
                     raise ValueError("Question validator returned None")
-                    
+
                 logger.debug(
                     f"Validation result: valid={getattr(validation, 'is_valid', False)}, reason={getattr(validation, 'reason', 'Unknown')}"
                 )
                 pbar.update(1)  # Step 1 complete
 
-                # Step 2: Generate revision guidance for all questions (valid or invalid)
-                pbar.set_description(f"Q{question.number}: Generating guidance")
-                try:
-                    revision_guidance = self._generate_revision_guidance(question, validation)
-                except Exception as e:
-                    logger.error(f"Error generating revision guidance for question {question.number}: {e}")
-                    # Create a fallback revision guidance
-                    revision_guidance = RevisionGuidance(
-                        revision_priority='MEDIUM',
-                        specific_issues=['Unable to analyze question due to technical error'],
-                        concrete_suggestions=['Review the question against course materials'],
-                        example_improvements=['Make the question more specific and clear'],
-                        context_alignment='Unknown'
-                    )
+                # Step 2: Skip revision guidance generation (not needed)
+                pbar.set_description(f"Q{question.number}: Skipping guidance")
+                revision_guidance = None
                 pbar.update(1)  # Step 2 complete
 
                 is_valid = getattr(validation, 'is_valid', False)
@@ -556,11 +558,11 @@ class DSPyQuizChallenge:
                     llm_response = self.question_answerer(
                         question=question.question, context_content=self.context_content
                     )
-                
+
                 # Check if llm_response is None
                 if llm_response is None:
                     raise ValueError("Question answerer returned None")
-                
+
                 llm_answer = getattr(llm_response, 'answer', 'Unable to generate answer')
                 logger.debug(f"LLM's answer: {llm_answer[:100]}...")
                 pbar.update(1)  # Step 3 complete
@@ -568,16 +570,17 @@ class DSPyQuizChallenge:
                 # Step 4: Evaluate LLM's answer against student's correct answer using DSPy
                 pbar.set_description(f"Q{question.number}: Evaluating LLM answer")
                 logger.debug(f"Evaluating LLM's answer for question {question.number}...")
-                evaluation = self.answer_evaluator(
-                    question=question.question,
-                    correct_answer=question.answer,
-                    llm_answer=llm_answer,
-                )
-                
+                with dspy.context(lm=self.lm):
+                    evaluation = self.answer_evaluator(
+                        question=question.question,
+                        correct_answer=question.answer,
+                        llm_answer=llm_answer,
+                    )
+
                 # Check if evaluation is None
                 if evaluation is None:
                     raise ValueError("Answer evaluator returned None")
-                    
+
                 verdict = getattr(evaluation, 'verdict', 'INCORRECT')
                 student_won_this_question = getattr(evaluation, 'student_wins', False)
                 logger.debug(
@@ -593,10 +596,8 @@ class DSPyQuizChallenge:
                     llm_wins += 1
                     pbar.set_description(f"Q{question.number}: Complete - LLM wins")
 
-                # Generate revision guidance for valid questions too
-                revision_guidance = self._generate_revision_guidance(
-                    question, validation, llm_answer, evaluation
-                )
+                # Skip revision guidance generation completely
+                revision_guidance = None
 
                 result = QuizResult(
                     question=question,
@@ -637,7 +638,7 @@ class DSPyQuizChallenge:
         logger.info("Applying similarity issues to question results...")
         if similarity_analysis is not None:
             self._apply_similarity_issues_to_questions(question_results, similarity_analysis)
-        
+
         # Add similarity issues to the overall validation issues list
         if similarity_analysis is not None and similarity_analysis.get('has_issues', False):
             if similarity_analysis.get('duplicate_pairs', []):
@@ -648,48 +649,51 @@ class DSPyQuizChallenge:
         # Calculate results
         evaluated_questions = student_wins + llm_wins
         success_rate = student_wins / evaluated_questions if evaluated_questions > 0 else 0.0
-        
+
         # Student passes if they win all valid questions - similarity issues are informational only
         student_passes = (
-            valid_count == len(questions) and 
-            evaluated_questions > 0 and 
+            valid_count == len(questions) and
+            evaluated_questions > 0 and
             success_rate >= 1.0
             # Removed similarity check - it shouldn't block passing if student legitimately won
         )
 
-        # Generate feedback using DSPy
-        try:
-            logger.debug("Generating feedback with DSPy...")
-            feedback = self.feedback_generator(
-                total_questions=len(questions),
-                valid_questions=valid_count,
-                invalid_questions=len(questions) - valid_count,
-                student_wins=student_wins,
-                llm_wins=llm_wins,
-                validation_issues=all_validation_issues,
-                success_rate=success_rate,
-            )
-            
-            # Check if feedback is None
-            if feedback is None:
-                raise ValueError("Feedback generator returned None")
-            
-            feedback_summary = getattr(feedback, 'feedback_summary', 'Unable to generate feedback')
-            github_result = getattr(feedback, 'github_classroom_marker', 'STUDENTS_QUIZ_KEIKO_LOSE')
-            logger.debug(f"DSPy feedback generated successfully: {feedback_summary[:100]}...")
-        except Exception as e:
-            logger.error(f"Error generating feedback: {e}")
-            logger.debug(f"Feedback generation exception details:", exc_info=True)
-            # Create manual feedback as fallback
+        # Generate feedback using DSPy (only if detailed feedback is enabled)
+        feedback_summary = "Quiz evaluation completed successfully."
+        github_classroom_result = "PASS" if student_passes else "FAIL"
+
+        if self.enable_detailed_feedback:
+            try:
+                logger.debug("Generating detailed feedback with DSPy...")
+                with dspy.context(lm=self.lm):
+                    feedback = self.feedback_generator(
+                        total_questions=len(questions),
+                        valid_questions=valid_count,
+                        invalid_questions=len(questions) - valid_count,
+                        student_wins=student_wins,
+                        llm_wins=llm_wins,
+                        validation_issues=all_validation_issues,
+                        success_rate=success_rate,
+                    )
+
+                # Check if feedback is None
+                if feedback is None:
+                    raise ValueError("Feedback generator returned None")
+
+                feedback_summary = getattr(feedback, 'feedback_summary', feedback_summary)
+                github_classroom_result = getattr(feedback, 'github_classroom_marker', github_classroom_result)
+
+            except Exception as e:
+                logger.warning(f"Failed to generate detailed feedback: {e}")
+                # Use default feedback
+        else:
+            # Simple feedback for fast mode
             if evaluated_questions == 0:
                 feedback_summary = "No questions were successfully processed. Please check your quiz format and try again."
             elif student_wins == 0:
-                feedback_summary = "You did not answer any questions correctly. It appears you may need to review the material more thoroughly. Keep practicing and don't get discouraged!"
+                feedback_summary = "The AI answered your question correctly. Try creating a more challenging question!"
             else:
-                feedback_summary = f"Quiz completed! You successfully stumped the LLM on {student_wins} out of {evaluated_questions} evaluated questions (success rate: {success_rate:.1%})."
-            github_result = (
-                "STUDENTS_QUIZ_KEIKO_WIN" if student_passes else "STUDENTS_QUIZ_KEIKO_LOSE"
-            )
+                feedback_summary = f"Great job! You stumped the AI. Your question was challenging enough that the AI got it wrong."
 
         return QuizResults(
             quiz_title=quiz_title,
@@ -702,7 +706,7 @@ class DSPyQuizChallenge:
             question_results=question_results,
             feedback_summary=feedback_summary,
             student_passes=student_passes,
-            github_classroom_result=github_result,
+            github_classroom_result=github_classroom_result,
             similarity_analysis=similarity_analysis,  # Added similarity analysis
         )
 
