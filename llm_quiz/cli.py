@@ -292,21 +292,21 @@ GitHub Classroom Integration:
         default=True,
         help="Exit with error code if students don't pass (default: True)",
     )
-    
+
     parser.add_argument(
         "--context-strictness",
         choices=["strict", "normal", "lenient"],
         default="normal",
         help="How strictly to check context alignment: 'strict' (only direct matches), 'normal' (direct + extensions), 'lenient' (also allows tangential) (default: normal)",
     )
-    
+
     parser.add_argument(
         "--verify-answers",
         action="store_true",
         default=True,
         help="Enable fact-checking of student answers to ensure correctness (default: True)",
     )
-    
+
     parser.add_argument(
         "--no-verify-answers",
         dest="verify_answers",
@@ -386,7 +386,10 @@ def main():
         for result in results.question_results:
             if result.is_valid:
                 # Determine status based on student answer correctness and win status
-                if hasattr(result, 'student_answer_correctness') and result.student_answer_correctness == 'INCORRECT':
+                if (
+                    hasattr(result, "student_answer_correctness")
+                    and result.student_answer_correctness == "INCORRECT"
+                ):
                     status_text = f"{Colors.ERROR}❌ Your answer is incorrect{Colors.RESET}"
                 elif result.student_wins:
                     status_text = f"{Colors.WIN}✅ You win!{Colors.RESET}"
@@ -402,17 +405,20 @@ def main():
                 print(
                     f"  {Colors.HEADER}Your answer:{Colors.RESET} {Colors.ANSWER}{result.question.answer}{Colors.RESET}"
                 )
-                
+
                 # Show if student answer has issues
-                if hasattr(result, 'student_answer_correctness') and result.student_answer_correctness != 'CORRECT':
+                if (
+                    hasattr(result, "student_answer_correctness")
+                    and result.student_answer_correctness != "CORRECT"
+                ):
                     print(
                         f"  {Colors.ERROR}Answer Status: {result.student_answer_correctness}{Colors.RESET}"
                     )
-                    if hasattr(result, 'factual_issues') and result.factual_issues:
+                    if hasattr(result, "factual_issues") and result.factual_issues:
                         print(
                             f"  {Colors.ERROR}Factual Issues: {', '.join(result.factual_issues)}{Colors.RESET}"
                         )
-                
+
                 print(
                     f"  {Colors.HEADER}AI's answer:{Colors.RESET} {Colors.AI_RESPONSE}{result.llm_answer}{Colors.RESET}"
                 )
