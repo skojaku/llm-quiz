@@ -52,9 +52,12 @@ class ValidateQuestion(dspy.Signature):
       Example: Context about Euler paths, question about spectral clustering = context_mismatch
     - DO NOT flag context_mismatch for questions that extend or apply concepts from the context
       Example: Context about node degree, question about self-loops in degree calculation = acceptable extension
+    - ALLOW questions about specific cases or examples that can be analyzed using concepts/definitions from the context
+      Example: Context defines betweenness centrality, question about "which node has highest betweenness in a binary tree" = acceptable application
     - Flag weak_context_alignment if the question is tangentially related but requires substantial external knowledge
     - Questions may explore implications, edge cases, or applications of concepts if they can be reasoned from context
     - DISTINGUISH between "different topic" (mismatch) vs "derived application" (acceptable)
+    - Questions asking to apply provided definitions to specific scenarios are VALID if the context provides the necessary concepts
     
     CLARITY AND SPECIFICITY REQUIREMENTS:
     - Flag vague_question if the question lacks specificity or is too general
@@ -73,7 +76,7 @@ class ValidateQuestion(dspy.Signature):
 
     is_valid: bool = dspy.OutputField(desc="Whether the question is valid and acceptable")
     issues: List[ValidationIssue] = dspy.OutputField(
-        desc="List of specific validation issues found (check for context_mismatch, weak_context_alignment, vague_question, ambiguous_wording, incomplete_context). STRICTLY flag context_mismatch when the question is about topics not covered in the provided context materials. Check if the question topic matches the subject matter of the provided context."
+        desc="List of specific validation issues found (check for context_mismatch, weak_context_alignment, vague_question, ambiguous_wording, incomplete_context). STRICTLY flag context_mismatch when the question is about topics not covered in the provided context materials. However, ALLOW questions that apply provided concepts/definitions to specific cases or examples. Check if the question can be answered using the concepts and definitions provided in the context."
     )
     confidence: Literal["HIGH", "MEDIUM", "LOW"] = dspy.OutputField(
         desc="Confidence in validation decision"
