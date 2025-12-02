@@ -223,6 +223,9 @@ class EvaluateAnswer(dspy.Signature):
     student_wins: bool = dspy.OutputField(
         desc="True if student wins (student correct AND LLM wrong), False otherwise"
     )
+    summary: str = dspy.OutputField(
+        desc="Brief 1-2 sentence summary of the result (e.g., 'Both answers are correct.' or 'The student's answer contains a factual error about X.')"
+    )
     explanation: str = dspy.OutputField(
         desc="Detailed explanation including fact-checking of both answers"
     )
