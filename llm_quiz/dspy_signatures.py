@@ -101,6 +101,9 @@ class AnswerQuizQuestion(dspy.Signature):
     answer: str = dspy.OutputField(
         desc="Concise but thorough answer to the question (max 300 words)"
     )
+    answer_summary: str = dspy.OutputField(
+        desc="Brief 1-2 sentence summary: the key answer and main reasoning (e.g., 'The answer is X because Y.')"
+    )
 
 
 class CheckContextAlignment(dspy.Signature):
