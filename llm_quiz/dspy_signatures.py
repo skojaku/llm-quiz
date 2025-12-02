@@ -196,6 +196,15 @@ class ValidateQuestionSimilarity(dspy.Signature):
 class EvaluateAnswer(dspy.Signature):
     """Evaluate an LLM's answer against the student's provided answer, while fact-checking both.
 
+    CRITICAL: You must accurately represent what each answer actually says. DO NOT misquote or
+    fabricate claims. Extract the exact key claims before evaluating.
+
+    EVALUATION PROCESS:
+    1. Extract key claims from the student's answer (what do they actually claim?)
+    2. Extract key claims from the LLM's answer (what does it actually claim?)
+    3. Fact-check each claim independently
+    4. Compare the answers fairly based on what was ACTUALLY said
+
     IMPORTANT EVALUATION CRITERIA:
     1. First, verify if the student's provided answer is factually correct
     2. Then, evaluate if the LLM's answer is factually correct
@@ -207,36 +216,49 @@ class EvaluateAnswer(dspy.Signature):
     - Check for logical consistency in the reasoning
     - Identify misconceptions or errors in understanding
     - Consider if there might be multiple valid perspectives
+    - If both answers reach the same correct conclusion, both are correct
 
     EXAMPLES:
     - If student says "False" to a true statement, their answer is incorrect
-    - If student provides wrong reasoning (e.g., "depends on network size" when it actually depends on rewiring probability), mark as incorrect
-    - If both answers are correct but approach differently, both are correct"""
+    - If student provides wrong reasoning, mark as incorrect
+    - If both answers are correct but approach differently, both are correct
+    - If LLM says "exactly two nodes" and student says "two nodes", both are saying the same thing"""
 
     question: str = dspy.InputField(desc="The student's quiz question")
     correct_answer: str = dspy.InputField(desc="The student's provided correct answer")
     llm_answer: str = dspy.InputField(desc="The LLM's attempt at answering the student's question")
 
-    verdict: Literal["CORRECT", "INCORRECT"] = dspy.OutputField(
-        desc="Whether the LLM's answer is factually correct"
+    # Step 1: Extract what each answer actually claims (prevents misrepresentation)
+    student_key_claim: str = dspy.OutputField(
+        desc="Extract the student's main claim/answer in one sentence. Quote key phrases if needed."
     )
+    llm_key_claim: str = dspy.OutputField(
+        desc="Extract the LLM's main claim/answer in one sentence. Quote key phrases if needed."
+    )
+
+    # Step 2: Evaluate each independently
     student_answer_correctness: Literal["CORRECT", "INCORRECT", "PARTIALLY_CORRECT"] = (
         dspy.OutputField(desc="Whether the student's provided answer is factually correct")
     )
+    verdict: Literal["CORRECT", "INCORRECT"] = dspy.OutputField(
+        desc="Whether the LLM's answer is factually correct"
+    )
+
+    # Step 3: Determine winner
     student_wins: bool = dspy.OutputField(
-        desc="True if student wins (student correct AND LLM wrong), False otherwise"
+        desc="True ONLY if student's answer is correct AND LLM's answer is incorrect. False otherwise."
     )
     summary: str = dspy.OutputField(
-        desc="Brief 1-2 sentence summary of the result (e.g., 'Both answers are correct.' or 'The student's answer contains a factual error about X.')"
+        desc="Brief 1-2 sentence summary comparing the two answers based on what they ACTUALLY said."
     )
     explanation: str = dspy.OutputField(
-        desc="Detailed explanation including fact-checking of both answers"
+        desc="Detailed explanation of the fact-checking for both answers"
     )
     confidence: Literal["HIGH", "MEDIUM", "LOW"] = dspy.OutputField(
         desc="Confidence level in the evaluation"
     )
     factual_issues: List[str] = dspy.OutputField(
-        desc="List of factual errors found in either answer"
+        desc="List of specific factual errors found, with quotes from the answer containing the error"
     )
     improvement_suggestions: List[str] = dspy.OutputField(
         desc="Suggestions for improving the question or correcting misconceptions"
