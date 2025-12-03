@@ -208,8 +208,8 @@ class EvaluateAnswer(dspy.Signature):
     IMPORTANT EVALUATION CRITERIA:
     1. First, verify if the student's provided answer is factually correct
     2. Then, evaluate if the LLM's answer is factually correct
-    3. Student wins ONLY if their answer is correct AND the LLM's answer is incorrect
-    4. If student's answer is factually wrong, they cannot win regardless of LLM's answer
+    3. Student wins if their answer is correct or partially correct AND the LLM's answer is incorrect
+    4. If student's answer is factually INCORRECT (not partially correct), they cannot win regardless of LLM's answer
 
     FACT-CHECKING GUIDELINES:
     - Verify factual accuracy based on established knowledge
@@ -246,7 +246,7 @@ class EvaluateAnswer(dspy.Signature):
 
     # Step 3: Determine winner
     student_wins: bool = dspy.OutputField(
-        desc="True ONLY if student's answer is correct AND LLM's answer is incorrect. False otherwise."
+        desc="True if student's answer is correct or partially correct AND LLM's answer is incorrect. False otherwise."
     )
     summary: str = dspy.OutputField(
         desc="Brief 1-2 sentence summary comparing the two answers based on what they ACTUALLY said."
