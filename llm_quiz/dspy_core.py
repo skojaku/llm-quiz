@@ -50,6 +50,24 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def _is_answer_truncated(answer: str) -> bool:
+    """Detect if a student answer appears truncated/incomplete."""
+    if not answer or len(answer.strip()) < 10:
+        return False  # Too short to judge
+    stripped = answer.strip()
+    # Ends mid-word (no space/punctuation at end, and last char is a letter)
+    if stripped[-1].isalpha() and len(stripped) > 50:
+        # Check if it ends mid-sentence without any sentence-ending punctuation
+        last_sentence_end = max(
+            stripped.rfind('.'), stripped.rfind('!'), stripped.rfind('?'),
+            stripped.rfind('"'), stripped.rfind("'")
+        )
+        # If the last punctuation is far from the end, likely truncated
+        if last_sentence_end < len(stripped) - 80:
+            return True
+    return False
+
+
 @dataclass
 class QuizQuestion:
     """Represents a single quiz question created by the student."""
@@ -758,6 +776,24 @@ class DSPyQuizChallenge:
                         )
                         if factual_issues:
                             logger.info(f"Factual issues found: {', '.join(factual_issues)}")
+
+                # Reject subjective/opinion questions - no objectively verifiable answer
+                question_objectivity = getattr(evaluation, "question_objectivity", "OBJECTIVE")
+                answer_verifiable = getattr(evaluation, "answer_verifiable", True)
+
+                if question_objectivity == "SUBJECTIVE" or not answer_verifiable:
+                    student_won_this_question = False
+                    logger.info(
+                        f"Question {question.number}: Rejected - subjective/unverifiable "
+                        f"(objectivity={question_objectivity}, verifiable={answer_verifiable})"
+                    )
+
+                # Reject truncated student answers
+                if _is_answer_truncated(question.answer):
+                    student_won_this_question = False
+                    logger.info(
+                        f"Question {question.number}: Rejected - student answer appears truncated"
+                    )
 
                 logger.debug(
                     f"Evaluation: LLM verdict={verdict}, student_answer={student_answer_correctness}, student_wins={student_won_this_question}"

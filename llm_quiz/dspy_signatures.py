@@ -26,6 +26,8 @@ class ValidationIssue(str, Enum):
     OVERLAPPING_CONTENT = (
         "overlapping_content"  # Question covers content heavily overlapping with another
     )
+    SUBJECTIVE_QUESTION = "subjective_question"  # Question is opinion-based with no objectively correct answer
+    TRUNCATED_ANSWER = "truncated_answer"  # Student's answer appears truncated/incomplete
 
 
 class ParseQuestionAndAnswer(dspy.Signature):
@@ -204,6 +206,8 @@ class EvaluateAnswer(dspy.Signature):
     2. Extract key claims from the LLM's answer (what does it actually claim?)
     3. Fact-check each claim independently
     4. Compare the answers fairly based on what was ACTUALLY said
+    5. Assess whether the question has an objectively verifiable answer
+    6. Check if the correct answer can be verified against established knowledge or the provided context
 
     IMPORTANT EVALUATION CRITERIA:
     1. First, verify if the student's provided answer is factually correct
@@ -248,6 +252,21 @@ class EvaluateAnswer(dspy.Signature):
     student_wins: bool = dspy.OutputField(
         desc="True if student's answer is correct or partially correct AND LLM's answer is incorrect. False otherwise."
     )
+
+    # Step 4: Assess question objectivity and answer verifiability
+    question_objectivity: Literal["OBJECTIVE", "SUBJECTIVE"] = dspy.OutputField(
+        desc="OBJECTIVE if the question has a clear, factually verifiable correct answer. "
+             "SUBJECTIVE if the question is opinion-based, asks for personal judgment, or has multiple equally valid answers with no way to determine which is 'correct'. "
+             "Examples of SUBJECTIVE: 'Is X more important than Y?', 'At what point should we...', 'Is it imperative that...'. "
+             "Examples of OBJECTIVE: 'What does X mean?', 'True or False: X', 'Why does X happen?', 'What command does Y?'"
+    )
+    answer_verifiable: bool = dspy.OutputField(
+        desc="True if the student's provided correct answer can be verified against established domain knowledge, "
+             "well-known facts, or the provided context materials. "
+             "False if the answer is purely an opinion, a personal judgment call, or cannot be fact-checked "
+             "because there is no authoritative source to verify it against."
+    )
+
     summary: str = dspy.OutputField(
         desc="Brief 1-2 sentence summary comparing the two answers based on what they ACTUALLY said."
     )
